@@ -17,6 +17,11 @@
 
     * { box-sizing: border-box; }
 
+    html {
+        overflow-x: hidden;
+        height: 100%;
+    }
+
     body {
         margin: 0;
         background: radial-gradient(circle at 50% 20%, var(--bg-mid) 0%, var(--bg-deep) 65%);
@@ -362,6 +367,10 @@
         board.style.transform = `scale(${scale})`;
     }
     window.addEventListener('resize', resize);
+    if (window.ResizeObserver) {
+        new ResizeObserver(() => resize()).observe(viewport);
+    }
+    window.addEventListener('orientationchange', () => setTimeout(resize, 300));
 
     function toggleOverlay(id, show) {
         if (show) {
