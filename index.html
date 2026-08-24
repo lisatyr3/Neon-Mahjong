@@ -28,7 +28,7 @@
     * { box-sizing: border-box; }
 
     html {
-        overflow-x: hidden;
+        overflow: hidden;
         height: 100%;
     }
 
@@ -165,28 +165,22 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        overflow: auto;
-        -webkit-overflow-scrolling: touch;
+        overflow: hidden;
         position: relative;
         z-index: 2;
-        scrollbar-color: var(--purple) rgba(255,255,255,0.06);
-        scrollbar-width: thin;
     }
-    .viewport::-webkit-scrollbar { height: 10px; width: 10px; }
-    .viewport::-webkit-scrollbar-track { background: rgba(255,255,255,0.06); }
-    .viewport::-webkit-scrollbar-thumb { background: var(--purple); border-radius: 6px; }
 
     .board-container {
         position: relative;
-        width: 1208px;
-        height: 1066px;
+        width: 1100px;
+        height: 960px;
         transform-origin: center center;
     }
 
     .tile {
         position: absolute;
-        width: 92px;
-        height: 124px;
+        width: 84px;
+        height: 112px;
         background: var(--white);
         border-radius: 8px;
         cursor: pointer;
@@ -380,24 +374,14 @@
     const SUIT_INK = { dots: 'var(--ink-dots)', bamboo: 'var(--ink-bamboo)', char: 'var(--ink-char)', wind: 'var(--ink-wind)' };
 
     // Tile footprint + grid spacing (must match the .tile width/height in CSS).
-    const TILE_W = 92, TILE_H = 124;
-    const STEP_X = 96, STEP_Y = 128, Z_STEP = 8;
-    const ORIGIN_X = 50, ORIGIN_Y = 36;
+    const TILE_W = 84, TILE_H = 112;
+    const STEP_X = 88, STEP_Y = 116, Z_STEP = 7;
+    const ORIGIN_X = 40, ORIGIN_Y = 28;
     let boardW = 0, boardH = 0;
 
-    const MIN_SCALE = 0.62; // below this, tiles get too small/blurry to read - scroll instead of shrinking further
-    const MAX_SCALE = 1.15;
-
     function resize() {
-        const fitScale = Math.min(viewport.clientWidth / (boardW || 1208), viewport.clientHeight / (boardH || 1066)) * 0.98;
-        const scale = Math.max(Math.min(fitScale, MAX_SCALE), MIN_SCALE);
-        board.style.transform = `scale(${scale})`;
-        // Safety net: if the board still overflows the viewport at MIN_SCALE, make
-        // sure the initial scroll position is centered rather than stuck in a corner.
-        requestAnimationFrame(() => {
-            viewport.scrollLeft = Math.max(0, (viewport.scrollWidth - viewport.clientWidth) / 2);
-            viewport.scrollTop = Math.max(0, (viewport.scrollHeight - viewport.clientHeight) / 2);
-        });
+        const scale = Math.min(viewport.clientWidth / (boardW || 1100), viewport.clientHeight / (boardH || 960)) * 0.97;
+        board.style.transform = `scale(${Math.min(scale, 1.15)})`;
     }
     window.addEventListener('resize', resize);
     if (window.ResizeObserver) {
@@ -433,8 +417,23 @@
         const charMap = {'1':'一','2':'二','3':'三','4':'四','5':'五','6':'六','7':'七','8':'八','9':'九','E':'東','S':'南','W':'西','N':'北','C':'中','F':'發','P':'白'};
         let artwork = '';
         if (type === 'dots') {
-            const positions = [[], [[50,50]], [[30,30],[70,70]], [[30,30],[50,50],[70,70]], [[35,35],[65,35],[35,65],[65,65]], [[30,30],[70,30],[50,50],[30,70],[70,70]], [[35,30],[65,30],[35,50],[65,50],[35,70],[65,70]], [[35,25],[65,25],[30,45],[50,50],[70,55],[35,75],[65,75]], [[30,30],[50,30],[70,30],[30,50],[50,50],[70,50],[30,70],[50,70],[70,70]]];
-            (positions[val] || []).forEach(pos => artwork += `<circle cx="${pos[0]}" cy="${pos[1]}" r="10" fill="var(--suit-ink)" stroke="rgba(0,0,0,0.25)" stroke-width="0.5"/>`);
+            // Clean 3x3 grid so dots never overlap, at any count.
+            const TL=[26,26], TC=[50,26], TR=[74,26];
+            const ML=[26,50], MC=[50,50], MR=[74,50];
+            const BL=[26,74], BC=[50,74], BR=[74,74];
+            const positions = [
+                [],
+                [MC],
+                [TL, BR],
+                [TL, MC, BR],
+                [TL, TR, BL, BR],
+                [TL, TR, MC, BL, BR],
+                [TL, ML, BL, TR, MR, BR],
+                [TL, TR, ML, MC, MR, BL, BR],
+                [TL, TC, TR, ML, MR, BL, BC, BR],
+                [TL, TC, TR, ML, MC, MR, BL, BC, BR]
+            ];
+            (positions[val] || []).forEach(pos => artwork += `<circle cx="${pos[0]}" cy="${pos[1]}" r="9" fill="var(--suit-ink)" stroke="rgba(0,0,0,0.25)" stroke-width="0.5"/>`);
         } else if (type === 'bamboo') {
             for(let i=0; i<val; i++) artwork += `<rect x="${28 + (i%3)*16}" y="${23 + Math.floor(i/3)*22}" width="10" height="18" rx="2" fill="var(--suit-ink)" stroke="rgba(0,0,0,0.25)" stroke-width="0.5"/>`;
         } else {
