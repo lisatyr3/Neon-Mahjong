@@ -13,14 +13,16 @@
         --yellow: #fbbf24;
         --purple: #a855f7;
         --white: #f5f3ff;
-        /* Darker "ink" versions of the neon accents, used for artwork/text drawn
-           on the light tile face. The neon colors above stay bright for glow/UI use,
-           but yellow and cyan in particular are too close in brightness to the
-           white tile to read well, so ink versions are tuned for contrast. */
-        --ink-dots: #c2185b;
-        --ink-bamboo: #0e7490;
-        --ink-char: #92610a;
-        --ink-wind: #7c3aed;
+        /* Bold, traditional mahjong tile colors for the artwork/glyphs printed on
+           the light tile face. These are deliberately NOT the neon accent colors
+           above - true red/navy/forest green/black give much stronger contrast on
+           a near-white tile than a pastel or neon-tinted color would, which matters
+           a lot for readability (older eyes especially). The neon colors stay in
+           use for the glow/UI chrome only. */
+        --ink-dots: #163ea6;
+        --ink-bamboo: #157a37;
+        --ink-char: #c21f1f;
+        --ink-wind: #1a1a1a;
     }
 
     * { box-sizing: border-box; }
@@ -160,8 +162,9 @@
     .viewport {
         flex: 1;
         width: 100%;
-        display: grid;
-        place-items: safe center;
+        display: flex;
+        align-items: center;
+        justify-content: center;
         overflow: auto;
         -webkit-overflow-scrolling: touch;
         position: relative;
@@ -175,15 +178,15 @@
 
     .board-container {
         position: relative;
-        width: 1060px;
-        height: 940px;
+        width: 1208px;
+        height: 1066px;
         transform-origin: center center;
     }
 
     .tile {
         position: absolute;
-        width: 80px;
-        height: 108px;
+        width: 92px;
+        height: 124px;
         background: var(--white);
         border-radius: 8px;
         cursor: pointer;
@@ -377,18 +380,24 @@
     const SUIT_INK = { dots: 'var(--ink-dots)', bamboo: 'var(--ink-bamboo)', char: 'var(--ink-char)', wind: 'var(--ink-wind)' };
 
     // Tile footprint + grid spacing (must match the .tile width/height in CSS).
-    const TILE_W = 80, TILE_H = 108;
-    const STEP_X = 84, STEP_Y = 112, Z_STEP = 7;
-    const ORIGIN_X = 46, ORIGIN_Y = 34;
+    const TILE_W = 92, TILE_H = 124;
+    const STEP_X = 96, STEP_Y = 128, Z_STEP = 8;
+    const ORIGIN_X = 50, ORIGIN_Y = 36;
     let boardW = 0, boardH = 0;
 
-    const MIN_SCALE = 0.52; // below this, tiles get too small/blurry to read - scroll instead of shrinking further
+    const MIN_SCALE = 0.62; // below this, tiles get too small/blurry to read - scroll instead of shrinking further
     const MAX_SCALE = 1.15;
 
     function resize() {
-        const fitScale = Math.min(viewport.clientWidth / (boardW || 1060), viewport.clientHeight / (boardH || 940)) * 0.97;
+        const fitScale = Math.min(viewport.clientWidth / (boardW || 1208), viewport.clientHeight / (boardH || 1066)) * 0.98;
         const scale = Math.max(Math.min(fitScale, MAX_SCALE), MIN_SCALE);
         board.style.transform = `scale(${scale})`;
+        // Safety net: if the board still overflows the viewport at MIN_SCALE, make
+        // sure the initial scroll position is centered rather than stuck in a corner.
+        requestAnimationFrame(() => {
+            viewport.scrollLeft = Math.max(0, (viewport.scrollWidth - viewport.clientWidth) / 2);
+            viewport.scrollTop = Math.max(0, (viewport.scrollHeight - viewport.clientHeight) / 2);
+        });
     }
     window.addEventListener('resize', resize);
     if (window.ResizeObserver) {
@@ -425,14 +434,14 @@
         let artwork = '';
         if (type === 'dots') {
             const positions = [[], [[50,50]], [[30,30],[70,70]], [[30,30],[50,50],[70,70]], [[35,35],[65,35],[35,65],[65,65]], [[30,30],[70,30],[50,50],[30,70],[70,70]], [[35,30],[65,30],[35,50],[65,50],[35,70],[65,70]], [[35,25],[65,25],[30,45],[50,50],[70,55],[35,75],[65,75]], [[30,30],[50,30],[70,30],[30,50],[50,50],[70,50],[30,70],[50,70],[70,70]]];
-            (positions[val] || []).forEach(pos => artwork += `<circle cx="${pos[0]}" cy="${pos[1]}" r="9" fill="var(--suit-ink)"/>`);
+            (positions[val] || []).forEach(pos => artwork += `<circle cx="${pos[0]}" cy="${pos[1]}" r="10" fill="var(--suit-ink)" stroke="rgba(0,0,0,0.25)" stroke-width="0.5"/>`);
         } else if (type === 'bamboo') {
-            for(let i=0; i<val; i++) artwork += `<rect x="${29 + (i%3)*15}" y="${24 + Math.floor(i/3)*20}" width="9" height="16" rx="2" fill="var(--suit-ink)"/>`;
+            for(let i=0; i<val; i++) artwork += `<rect x="${28 + (i%3)*16}" y="${23 + Math.floor(i/3)*22}" width="10" height="18" rx="2" fill="var(--suit-ink)" stroke="rgba(0,0,0,0.25)" stroke-width="0.5"/>`;
         } else {
-            artwork = `<text x="50" y="66" text-anchor="middle" font-size="48" font-weight="bold" fill="var(--suit-ink)">${charMap[val] || val}</text>`;
-            if (type === 'char') artwork += `<text x="50" y="86" text-anchor="middle" font-size="22" fill="var(--suit-ink)">萬</text>`;
+            artwork = `<text x="50" y="67" text-anchor="middle" font-size="52" font-weight="bold" fill="var(--suit-ink)" stroke="rgba(0,0,0,0.15)" stroke-width="0.5">${charMap[val] || val}</text>`;
+            if (type === 'char') artwork += `<text x="50" y="87" text-anchor="middle" font-size="23" fill="var(--suit-ink)">萬</text>`;
         }
-        return `<svg viewBox="0 0 100 100"><text x="11" y="21" font-size="26" font-weight="900" fill="#1a1a1a">${val}</text>${artwork}</svg>`;
+        return `<svg viewBox="0 0 100 100"><text x="10" y="20" font-size="28" font-weight="900" fill="#1a1a1a">${val}</text>${artwork}</svg>`;
     }
 
     function buildDeck() {
